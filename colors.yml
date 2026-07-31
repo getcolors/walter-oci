@@ -1,0 +1,85 @@
+# Desired state for the walter-oci development machine. Non-secret values only.
+#
+# Secrets arrive as COLORS_PAR_* environment variables from .envrc.private.
+# Required here: COLORS_PAR_R2_ACCESS_KEY_ID and COLORS_PAR_R2_SECRET_ACCESS_KEY
+# for the state backend. OCI itself needs none — it authenticates from the
+# profile named below in ~/.oci/config.
+
+# Names the work directory, the OpenTofu state keys, and the ~/.ssh/config Host
+# alias — so this machine is `ssh walter-oci`.
+#
+# This value is the entire separation between this machine's state and
+# once-colors', which shares the bucket below. NEVER export COLORS_PAR_PROFILE:
+# walter refuses to start when it is set, precisely because one variable would
+# otherwise point it at `once-colors/...tfstate`.
+profile: walter-oci
+workdir: .colors
+
+provider-compute: oci
+provider-backend: r2
+
+# A development machine holds uncommitted work and the boot volume goes with it,
+# so the guard stays on. Lift it for one intentional delete with
+# COLORS_PAR_COMPUTE_PREVENT_DESTROY=false rather than editing this.
+compute-prevent-destroy: true
+
+# --- power ------------------------------------------------------------------
+#
+# `stop` and `start` never reach OpenTofu — no template declares a power state,
+# so stopping the machine causes no drift. They drive the oci CLI, which needs
+# OCI_CLI_AUTH=security_token (set in .envrc) and a live session token.
+#
+# Stopping stops the OCPU and memory meter. The 100 GB boot volume bills either
+# way. VM.Standard.A2.Flex is a paid shape, so this genuinely saves money.
+power-wait-seconds: 300
+
+# Optional, and worth filling in after the first create: with it set, stop and
+# start work even when the R2 backend is unreachable. Read it back with
+# `tofu output instance_id` in .colors/walter-oci/walter-compute/.
+# oci-instance-id: ocid1.instance.oc1...
+
+# --- oci --------------------------------------------------------------------
+#
+# Shared with once-colors deliberately: the same tenancy, the same subnet, the
+# same availability domain and the same session. One `oci session refresh`
+# serves both projects. The consequences, so they are stated rather than
+# discovered: this machine inherits the production subnet's security list, and
+# it can reach the website server over private IPs.
+oci-config-file-profile: DEFAULT
+oci-compartment-id: ocid1.tenancy.oc1..aaaaaaaabz6wkmand36zaln2wbyuqqflr2uzohoj3briepj4mfpohas2bxsq
+oci-subnet-id: ocid1.subnet.oc1.eu-frankfurt-1.aaaaaaaaeo3hhvldibbw42m6atn52izm6vmaxxcjbfm2fz7t3glvw3ovihta
+# Sharing the subnet constrains the machine to the ADs it serves, so this is
+# once-colors' value rather than a free choice.
+oci-availability-domain: XquT:EU-FRANKFURT-1-AD-1
+
+# Must differ from once-colors' `once`. OCI does not enforce unique display
+# names, and two instances with one name is a console you cannot read.
+oci-display-name: walter
+
+oci-shape: VM.Standard.A2.Flex
+# Deliberately larger than the website server (1 OCPU / 6 GB): this one compiles
+# things. Separate files mean separate sizing — nothing is shared here.
+oci-ocpus: 2
+oci-memory-in-gbs: 12
+oci-boot-volume-size-in-gbs: 100
+oci-boot-volume-vpus-per-gb: 30
+
+# Pin this after the first create — read it back with
+# `tofu state show oci_core_instance.ampere_vm` as source_id.
+#
+# Left unset, the newest compatible Canonical image is used, which is a moving
+# target: the image id forces replacement. With compute-prevent-destroy true a
+# later apply then FAILS rather than destroying the machine. Safe, and baffling
+# if you do not know why.
+# oci-image-id: ocid1.image.oc1...
+
+# Path to a public key, read by OpenTofu at plan time. Not key material.
+oci-ssh-authorized-keys: ~/.ssh/id_ed25519.pub
+
+# --- state backend ----------------------------------------------------------
+#
+# The same bucket once-colors uses. That is safe because the state key is
+# <profile>/<stage>.tfstate and both halves differ: this writes
+# walter-oci/walter-compute.tfstate, never once-colors/tofu-compute.tfstate.
+r2-bucket: tofu-state-319271fed8bc6d2d9059362be1165f37-eu
+r2-endpoint: https://319271fed8bc6d2d9059362be1165f37.eu.r2.cloudflarestorage.com
