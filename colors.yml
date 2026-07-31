@@ -120,6 +120,21 @@ nix-packages:
   - ripgrep
   - fd
   - fish
+  # Required by dotfiles-repo below: the installer is a bb script, and walter
+  # refuses to build without this beside it.
+  - babashka
+  # The six the dotfiles' own config.fish invokes at interactive startup. Absent,
+  # fish still starts but prints a command-not-found for each on every shell.
+  # They came from a hand-installed devbox on the workstation this configuration
+  # was written on; here they are declared, so a recreated machine has them.
+  - starship
+  - zoxide
+  - atuin
+  - direnv
+  - eza
+  # Not needed at startup, but the profile's `zne` and `za` aliases and its
+  # emacs.kdl layout are useless without it.
+  - zellij
 
 # The login shell, resolved under ~/.nix-profile/bin — so it has to be one of the
 # packages above, and walter refuses to build if it is not.
@@ -165,6 +180,31 @@ asdf-tools:
 # `pnpm` is slow and needs a network. That is corepack's design.
 corepack-packages:
   - pnpm
+
+# --- dotfiles ----------------------------------------------------------------
+#
+# Cloned to the machine and applied to $HOME by the remote playbook's last two
+# steps, after the shell and the editor the profile configures are already in
+# place.
+#
+# ssh:// rather than https://, for the same reason emacs-config-repo above is:
+# the clone rides the agent ~/.ssh/config forwards, so no private key lands on
+# the machine and edits made there can be pushed back. A dotfiles checkout you
+# cannot commit from is a checkout you stop editing.
+#
+# The cost is that create now needs your local agent to be holding the key —
+# an https:// clone of this public repository would not. That is already true of
+# the Emacs clone, so it adds no new failure mode.
+dotfiles-repo: git@github.com:amiorin/dotfiles-v3
+
+# Deliberately not the ~/code/personal/dotfiles-v3/main this configuration's
+# workstation uses. That path is a hand-made layout predating walter; this one is
+# walter's, and the two machines are not the same machine.
+dotfiles-dest: ~/code/amiorin/dotfiles-v3
+
+# Selects resources/stage-2/<profile>/ in the repository above. `macos` is the
+# only other one it ships, and this machine is Ubuntu.
+dotfiles-profile: ubuntu
 
 # --- state backend ----------------------------------------------------------
 #
