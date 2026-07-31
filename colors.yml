@@ -206,6 +206,28 @@ dotfiles-dest: ~/code/amiorin/dotfiles-v3
 # only other one it ships, and this machine is Ubuntu.
 dotfiles-profile: ubuntu
 
+# --- shell history -----------------------------------------------------------
+#
+# Adopts an existing atuin account, so a rebuilt machine can still see the
+# history of the one it replaced. Runs after the dotfiles above, because they
+# are what write ~/.config/atuin/config.toml.
+#
+# Only the username is here. The password and the encryption key are
+# COLORS_PAR_ATUIN_PASSWORD and COLORS_PAR_ATUIN_KEY, set in the gitignored
+# .envrc.private — this file is committed, and that key decrypts this account's
+# history on every machine it is on. The remote playbook reads them from the
+# environment at create time and refuses to run without them; `build` never
+# needs them, which is why they are not checked at validation time.
+#
+# Logging in replaces whatever key atuin generated locally, so history written
+# on the machine before the first create becomes unreadable. That is what
+# adopting an existing account means, and it is why the login runs once —
+# guarded by ~/.local/state/walter/atuin-<username>, a stamp walter writes,
+# because atuin keeps its session in meta.db and offers no file to watch.
+#
+# `atuin sync` after it is not guarded, and runs on every create.
+atuin-username: amiorin
+
 # --- state backend ----------------------------------------------------------
 #
 # The same bucket once-colors uses. That is safe because the state key is
