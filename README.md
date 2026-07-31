@@ -44,8 +44,15 @@ does not.
 
 `tofu plan` reports no changes.
 
-Nothing is installed on the machine. walter's remote stage is a connectivity
-ping in v1; toolchains and dotfiles are yours to add, and a later playbook to
-automate.
+walter's remote stage installs nix, then Emacs and this workstation's
+configuration — `emacs-config-repo` in `colors.yml` is what asks for the latter.
+The clone lands at `~/.config/neoemacs`, which Emacs does not read on its own:
+
+```sh
+ssh walter-oci
+emacs --init-directory ~/.config/neoemacs
+```
+
+Everything else is `nix profile install` on the machine, not a change here.
 
 See `CLAUDE.md` for what this shares with `../once-colors` and why that is safe.

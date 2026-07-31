@@ -38,6 +38,49 @@ Ansible stage writes a managed block into `~/.ssh/config` with agent forwarding
 on, so you can push to git from the machine without copying a private key onto
 it.
 
+## What the machine gets
+
+The remote stage installs **nix** and a **Ghostty terminfo entry** on any walter
+machine, and then — because `emacs-config-repo` is set in `colors.yml` — Emacs
+from a pinned nixpkgs plus this workstation's configuration, cloned to
+`~/.config/neoemacs`:
+
+```sh
+ssh walter-oci
+emacs --init-directory ~/.config/neoemacs
+```
+
+The `--init-directory` is mandatory. `~/.config/neoemacs` is not a path Emacs
+looks in on its own; the XDG default it *does* read is `~/.config/emacs`, and
+this configuration deliberately does not live there.
+
+`TERM` travels over SSH and the terminfo database does not, which is why the
+terminfo entry is there. Without it Ubuntu 24.04 has never heard of Ghostty and
+answers every full-screen program — `vim`, `top`, `less`, Emacs — with
+`Terminal type xterm-ghostty is not defined`. It is symlinked into
+`~/.terminfo`, which the system ncurses reads without any environment variable,
+so it works in a non-login shell too.
+
+Three things about that clone, in the order they will bite:
+
+- **It rides the forwarded agent.** The URL is `git@github.com:` and no private
+  key is ever written to the machine, so the checkout can push back — but only
+  while your local agent holds the key.
+- **It happens once.** A later `create` leaves an existing checkout alone. That
+  is on purpose: this is a working copy on a development machine, and an apply
+  must not discard edits made there. `git pull` on the machine is how it moves.
+- **Packages are not pre-fetched.** The first `emacs` launch pulls ~80 packages
+  from ELPA/MELPA, native-compiles them and clones tree-sitter grammars. It
+  takes minutes and it is not a provisioning failure. `nerd-icons-install-fonts`
+  is still a manual step.
+
+`nix` and `emacs` arrive on `PATH` through `/etc/profile.d/nix.sh`, which is a
+**login** shell mechanism. `ssh walter-oci` sees them; `ssh walter-oci emacs …`
+as a one-shot command does not.
+
+Anything else you want on the machine is `nix profile install` there, not a
+change to this repository.
+
 ## The relationship with once-colors
 
 This project deliberately shares four things with `../once-colors`: the OCI
@@ -102,6 +145,20 @@ cp .agents/skills/package-walter-green/walter walter
 **`stop` does not restart with `create`.** With no power state in the
 configuration there is no diff, so an apply leaves a stopped machine stopped.
 `start` is the only way up.
+
+**The Emacs keys are inert until the pin moves.** `emacs-config-repo` and
+`emacs-config-dest` are read by walter's remote playbook, which lives in the
+library the root `./walter` resolves by SHA — so `./walter build` renders the
+pinned playbook, not the one in `../walter`. Setting a key here changes nothing
+until that library is pushed and the launcher restamped. To see the working
+tree's version meanwhile:
+
+```sh
+WALTER_LIB_ROOT=../walter ./walter build
+```
+
+That is a deliberate act, not the default, and it renders something the pinned
+launcher would not run.
 
 **Pin `oci-image-id` after the first create.** Left unset the newest compatible
 Canonical image is used, and the image id forces replacement — so a later apply

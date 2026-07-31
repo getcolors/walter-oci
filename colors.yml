@@ -80,6 +80,25 @@ oci-image-id: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaal4itgbo25fulz7jbwyjdk2qc775
 # Path to a public key, read by OpenTofu at plan time. Not key material.
 oci-ssh-authorized-keys: ~/.ssh/id_ed25519.pub
 
+# --- editor -----------------------------------------------------------------
+#
+# The remote playbook installs nix on every machine regardless. These two keys
+# add Emacs on top of it and clone this configuration.
+#
+# An ssh:// URL rather than https:// on purpose: the clone rides the agent
+# ~/.ssh/config forwards, so no private key is written to the machine and the
+# checkout can push back — which is the point of a development machine.
+#
+# The clone happens once. A later create leaves an existing checkout alone, so
+# uncommitted work on the machine survives; `git pull` there is the way to
+# refresh it.
+emacs-config-repo: git@github.com:amiorin/.emacs.d.git
+
+# Not the default `~/.config/emacs`, so Emacs does not find it on its own —
+# launch with `emacs --init-directory ~/.config/neoemacs`. This mirrors the path
+# the configuration uses on this workstation.
+emacs-config-dest: ~/.config/neoemacs
+
 # --- state backend ----------------------------------------------------------
 #
 # The same bucket once-colors uses. That is safe because the state key is
