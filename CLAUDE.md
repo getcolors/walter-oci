@@ -119,19 +119,23 @@ is on it is uncommitted work. The guard is on by default and lifted with
 
 ## Provenance
 
-The skill payload here was copied from a local `../walter` checkout, because
-walter has not been pushed yet and so cannot be installed with
-`npx skills add getcolors/walter`. There is deliberately no `skills-lock.json`:
-a lockfile recording a source and content hash that no remote can serve would be
-a claim this project cannot back. Once walter is pushed and `bb pin` has stamped
-the launcher, install it properly and the lockfile appears with it.
+The launcher here is pinned and self-resolving: `./walter` fetches
+`io.github.getcolors/walter` at the stamped commit on first run, into
+`~/.gitlibs`, and needs no checkout, no `WALTER_LIB_ROOT` and no install step.
 
-Until then the launcher carries no pin, so it needs `WALTER_LIB_ROOT` pointing at
-the checkout:
+It was **copied by hand** from `../walter/skills/package-walter-green/`, not
+installed with `npx skills add getcolors/walter`, so there is deliberately no
+`skills-lock.json` — a lockfile records the source and content hash that an
+actual install computed, and writing one by hand would be a claim this project
+did not earn. Run the real install when you want it:
 
 ```sh
-WALTER_LIB_ROOT=../walter ./walter build
+npx skills add getcolors/walter
+cp .agents/skills/package-walter-green/walter walter    # the copy, again
 ```
+
+The lockfile appears with it, and from then on `npx skills update -p` is the
+way this project moves forward.
 
 ## Git
 

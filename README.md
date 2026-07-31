@@ -33,13 +33,17 @@ when walter says it has expired, run what it tells you to.
 
 ## Status
 
-Not yet created. Walter has not been pushed, so the launcher carries no pin and
-needs a checkout to resolve against:
+**No machine exists yet.** `build` and `create --dry-run` work and contact
+nothing; nothing beyond them has been run.
 
-```sh
-WALTER_LIB_ROOT=../walter ./walter build
-```
+The launcher is pinned and self-resolving — `./walter` fetches its library on
+first run and needs no checkout or install step, so the commands above work as
+written.
 
-Once walter is pushed and pinned, the plain commands above work.
+Two keys in `colors.yml` are commented out until the first `create`, and both
+are worth filling in afterwards: `oci-image-id`, so a later apply does not
+propose replacing the machine because Canonical published a new image, and
+`oci-instance-id`, so `stop` and `start` keep working when the R2 backend does
+not.
 
 See `CLAUDE.md` for what this shares with `../once-colors` and why that is safe.
