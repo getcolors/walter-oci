@@ -33,17 +33,19 @@ when walter says it has expired, run what it tells you to.
 
 ## Status
 
-**No machine exists yet.** `build` and `create --dry-run` work and contact
-nothing; nothing beyond them has been run.
+**Created and running.** `VM.Standard.A2.Flex`, 2 OCPU / 12 GB / 100 GB, Ubuntu
+24.04 on aarch64, in `XquT:EU-FRANKFURT-1-AD-1`. `ssh walter-oci` reaches it.
 
-The launcher is pinned and self-resolving — `./walter` fetches its library on
-first run and needs no checkout or install step, so the commands above work as
-written.
+Both post-create keys are filled in, so `colors.yml` now plans clean:
+`oci-image-id` is pinned to the image actually booted — an unpinned one is a
+moving target that would eventually propose replacing the machine — and
+`oci-instance-id` is set, so `stop` and `start` work even when the R2 backend
+does not.
 
-Two keys in `colors.yml` are commented out until the first `create`, and both
-are worth filling in afterwards: `oci-image-id`, so a later apply does not
-propose replacing the machine because Canonical published a new image, and
-`oci-instance-id`, so `stop` and `start` keep working when the R2 backend does
-not.
+`tofu plan` reports no changes.
+
+Nothing is installed on the machine. walter's remote stage is a connectivity
+ping in v1; toolchains and dotfiles are yours to add, and a later playbook to
+automate.
 
 See `CLAUDE.md` for what this shares with `../once-colors` and why that is safe.

@@ -33,10 +33,11 @@ compute-prevent-destroy: true
 # way. VM.Standard.A2.Flex is a paid shape, so this genuinely saves money.
 power-wait-seconds: 300
 
-# Optional, and worth filling in after the first create: with it set, stop and
-# start work even when the R2 backend is unreachable. Read it back with
-# `tofu output instance_id` in .colors/walter-oci/walter-compute/.
-# oci-instance-id: ocid1.instance.oc1...
+# Set from the first create. With it here, stop and start need no access to
+# OpenTofu state at all, so a broken R2 bucket cannot strand this machine
+# running. Re-read it with `tofu output instance_id` in
+# .colors/walter-oci/walter-compute/ if it is ever replaced.
+oci-instance-id: ocid1.instance.oc1.eu-frankfurt-1.antheljrl3n4evic4u527nloyr6bmktsr32equlv4w4xremheumhwjcgpwgq
 
 # --- oci --------------------------------------------------------------------
 #
@@ -64,14 +65,17 @@ oci-memory-in-gbs: 12
 oci-boot-volume-size-in-gbs: 100
 oci-boot-volume-vpus-per-gb: 30
 
-# Pin this after the first create — read it back with
+# Pinned from the first create, read back with
 # `tofu state show oci_core_instance.ampere_vm` as source_id.
 #
-# Left unset, the newest compatible Canonical image is used, which is a moving
-# target: the image id forces replacement. With compute-prevent-destroy true a
-# later apply then FAILS rather than destroying the machine. Safe, and baffling
-# if you do not know why.
-# oci-image-id: ocid1.image.oc1...
+# Unset, the newest compatible Canonical image is used — a moving target, and
+# the image id forces replacement. With compute-prevent-destroy true a later
+# apply would then FAIL rather than destroy the machine: safe, and baffling if
+# you do not know why. Pinned, an apply months from now still plans no changes.
+#
+# This is the same image once-colors runs, which is expected — same region, same
+# Canonical family, and it was the newest when both were created.
+oci-image-id: ocid1.image.oc1.eu-frankfurt-1.aaaaaaaal4itgbo25fulz7jbwyjdk2qc775l4npiqraf44ac62pf4iqfddsa
 
 # Path to a public key, read by OpenTofu at plan time. Not key material.
 oci-ssh-authorized-keys: ~/.ssh/id_ed25519.pub
