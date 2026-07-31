@@ -37,7 +37,7 @@ power-wait-seconds: 300
 # OpenTofu state at all, so a broken R2 bucket cannot strand this machine
 # running. Re-read it with `tofu output instance_id` in
 # .colors/walter-oci/walter-compute/ if it is ever replaced.
-oci-instance-id: ocid1.instance.oc1.eu-frankfurt-1.antheljrl3n4eviclj3xc7lo2futwaamluvk4gxhztizo6vockn7pcjeon4a
+oci-instance-id: ocid1.instance.oc1.eu-frankfurt-1.antheljrl3n4evicctrxze54ezdxfqhtdebw5kttmhmyxi2zz4qdgcvrknyq
 
 # --- oci --------------------------------------------------------------------
 #
