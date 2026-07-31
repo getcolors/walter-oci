@@ -37,7 +37,7 @@ power-wait-seconds: 300
 # OpenTofu state at all, so a broken R2 bucket cannot strand this machine
 # running. Re-read it with `tofu output instance_id` in
 # .colors/walter-oci/walter-compute/ if it is ever replaced.
-oci-instance-id: ocid1.instance.oc1.eu-frankfurt-1.antheljrl3n4evic4u527nloyr6bmktsr32equlv4w4xremheumhwjcgpwgq
+oci-instance-id: ocid1.instance.oc1.eu-frankfurt-1.antheljrl3n4eviclj3xc7lo2futwaamluvk4gxhztizo6vockn7pcjeon4a
 
 # --- oci --------------------------------------------------------------------
 #
@@ -98,6 +98,73 @@ emacs-config-repo: git@github.com:amiorin/.emacs.d.git
 # launch with `emacs --init-directory ~/.config/neoemacs`. This mirrors the path
 # the configuration uses on this workstation.
 emacs-config-dest: ~/.config/neoemacs
+
+# --- toolchain ---------------------------------------------------------------
+#
+# Installed with `nix profile add` on top of the nix every walter machine gets.
+# Names are nixpkgs attribute paths, resolved against `nixpkgs-unstable` — the
+# same ref the terminfo and Emacs steps use.
+#
+# That ref is a channel branch, not a revision, so these track upstream: two
+# creates months apart do not produce the same versions. That is deliberate for
+# a development machine, and it is what makes asdf 0.20 reachable at all.
+#
+# This list is the machine's baseline, not an inventory of it. Anything
+# installed by hand on the machine is invisible here and does not survive a
+# delete; adding a name here is what makes it come back.
+#
+# `fish` lands on PATH only. Nothing here touches /etc/passwd, so it does not
+# become the login shell — that would be a separate and more invasive change.
+nix-packages:
+  - asdf-vm
+  - ripgrep
+  - fd
+  - fish
+
+# The login shell, resolved under ~/.nix-profile/bin — so it has to be one of the
+# packages above, and walter refuses to build if it is not.
+#
+# Switching this is not just a passwd(5) write. nix reaches a login shell through
+# /etc/profile.d/nix.sh, which is sh-only: fish does not read it, and a nix-built
+# fish does not read /etc/fish/conf.d either, because its sysconfdir is inside
+# the store. A fish login therefore starts with
+# PATH=/run/current-system/sw/bin:/bin:/usr/bin and cannot find `nix` itself,
+# which is a hole you cannot climb out of from inside that shell.
+#
+# So the playbook writes ~/.config/fish/conf.d/nix.fish — nix's own fish
+# integration — before it changes the shell, and never the other way round.
+#
+# `ssh walter-oci <command>` still runs this shell. Anything scripted against
+# this machine gets fish syntax, not bash.
+login-shell: fish
+
+# --- language runtimes -------------------------------------------------------
+#
+# asdf comes from nix-packages above; walter refuses to build without it there.
+#
+# nixpkgs-unstable ships asdf 0.20, the Go rewrite, so the playbook uses
+# `asdf set --home`. 0.16 removed `asdf global` outright — it answers "invalid
+# command provided" rather than warning — so a ref carrying 0.15 would need the
+# playbook changed in the same commit.
+#
+# `plugin` is optional; asdf resolves a bare name against its own index. It is
+# spelled out here because that is what asdf's own documentation does.
+asdf-tools:
+  - name: nodejs
+    version: 24.18.1
+    plugin: https://github.com/asdf-vm/asdf-nodejs.git
+
+# Package managers enabled through Node's own corepack, which is why this needs
+# the nodejs entry above rather than being a package in its own right.
+#
+# corepack installs its shims into that Node's bin directory, which asdf does
+# not expose until `asdf reshim` — without it `corepack enable pnpm` succeeds
+# and `pnpm` stays command-not-found. The playbook reshims; do not drop it.
+#
+# corepack downloads the package manager itself on first use, so the first
+# `pnpm` is slow and needs a network. That is corepack's design.
+corepack-packages:
+  - pnpm
 
 # --- state backend ----------------------------------------------------------
 #
