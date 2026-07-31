@@ -135,6 +135,13 @@ nix-packages:
   # Not needed at startup, but the profile's `zne` and `za` aliases and its
   # emacs.kdl layout are useless without it.
   - zellij
+  # A C compiler, for what Emacs builds on the machine rather than what nix
+  # ships it: native compilation, and any package with a C module — vterm,
+  # tree-sitter grammars fetched by treesit-install-language-grammar. The Emacs
+  # derivation does not carry one, so without this those fail at first use
+  # rather than at provisioning time. vterm additionally wants cmake and
+  # libtool; add them here if that module is enabled.
+  - gcc
 
 # The login shell, resolved under ~/.nix-profile/bin — so it has to be one of the
 # packages above, and walter refuses to build if it is not.
