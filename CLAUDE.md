@@ -166,9 +166,45 @@ proposes destroying the machine because Canonical published something new. With
 `compute-prevent-destroy: true` that apply fails instead, which is safe and
 confusing. Read the id back with `tofu state show oci_core_instance.ampere_vm`.
 
-**Fill in `oci-instance-id` once it exists.** It is what makes `stop` and `start`
-work when the R2 backend is unreachable, rather than leaving you with a running
-machine you cannot power off.
+**Fill in `oci-instance-id` once it exists**, and again after every recreate —
+it names one instance, so a rebuilt machine leaves it pointing at a `TERMINATED`
+one. It is what makes `stop` and `start` work when the R2 backend is
+unreachable, rather than leaving you with a running machine you cannot power
+off.
+
+**Running `tofu` by hand needs the R2 keys passed in.** Both commands above are
+run inside `.colors/walter-oci/walter-compute/`, and on their own they fail with
+
+```text
+Failed to load state: … InvalidArgument: Credential access key has length 20, should be 32
+```
+
+Nothing is wrong with the bucket. `AWS_ACCESS_KEY_ID` is unset in the shell, so
+the AWS SDK falls through its default chain to `~/.aws/credentials` and offers
+OpenTofu an unrelated Amazon key. Walter never hits this because it passes the
+R2 credentials to every stage explicitly; only the by-hand path is exposed:
+
+```sh
+cd .colors/walter-oci/walter-compute
+AWS_ACCESS_KEY_ID="$COLORS_PAR_R2_ACCESS_KEY_ID" \
+AWS_SECRET_ACCESS_KEY="$COLORS_PAR_R2_SECRET_ACCESS_KEY" \
+  tofu output -raw instance_id
+```
+
+**A recreate brings a new host key, and a new address.** The managed
+`~/.ssh/config` block is rewritten with the new IP, but nothing touches
+`~/.ssh/known_hosts` — so the first `ssh walter-oci` afterwards asks you to
+accept an unknown host. Answering the prompt is all it needs. It only looks
+broken from a script: with no terminal to prompt on, or under `BatchMode=yes`,
+the same situation is reported as `Host key verification failed`, which reads
+like a stale entry rather than a missing one. To record it without a prompt:
+
+```sh
+ssh -o StrictHostKeyChecking=accept-new walter-oci true
+```
+
+The remote Ansible stage never hits this — `ansible.cfg` sets
+`StrictHostKeyChecking=no` and points `UserKnownHostsFile` at `/dev/null`.
 
 **`delete` takes the boot volume with it.** This is a development machine; what
 is on it is uncommitted work. The guard is on by default and lifted with
