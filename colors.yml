@@ -142,6 +142,20 @@ nix-packages:
   # rather than at provisioning time. vterm additionally wants cmake and
   # libtool; add them here if that module is enabled.
   - gcc
+  # The three agent CLIs. `claude-code` is unfree in nixpkgs, where the other
+  # two are not — the playbook's single `nix profile add` carries
+  # NIXPKGS_ALLOW_UNFREE=1 and --impure for exactly this, which is what lets all
+  # three resolve in one invocation. That relaxes the licence check for every
+  # name in this list, not only this one.
+  #
+  # Attribute paths, not binary names: these ship `claude`, `codex` and `pi`.
+  # Versions track nixpkgs-unstable like everything else here, so they lag the
+  # vendors' own release channels and their self-updaters cannot write into the
+  # read-only store. Moving one forward is a create, not an update on the
+  # machine.
+  - claude-code
+  - codex
+  - pi-coding-agent
 
 # The login shell, resolved under ~/.nix-profile/bin — so it has to be one of the
 # packages above, and walter refuses to build if it is not.
@@ -234,6 +248,45 @@ dotfiles-profile: ubuntu
 #
 # `atuin sync` after it is not guarded, and runs on every create.
 atuin-username: amiorin
+
+# --- agent CLI credentials ---------------------------------------------------
+#
+# Carries this workstation's subscription logins to the machine, so the three
+# CLIs above work there without a browser on it — the same problem the OCI
+# session refresh solves with a port forward, avoided rather than solved.
+#
+# Only the agent names are desired state. Each resolves to exactly ONE file,
+# named in walter's own registry and never editable from here:
+#
+#   claude  ~/.claude/.credentials.json
+#   codex   ~/.codex/auth.json
+#   pi      ~/.pi/agent/auth.json
+#
+# Deliberately not the directories. ~/.claude, ~/.codex and ~/.pi are ~279 MB on
+# this workstation against ~9 KB of actual tokens, and nearly all the remainder
+# is session transcripts — which have no business on a machine sitting in the
+# production website's subnet.
+#
+# The files are read from this machine's home directory at create time and never
+# rendered, so nothing under .colors/ ever holds a token and `build` still needs
+# no credentials. A file that is not here is reported by name and skipped, so a
+# create from anywhere else still succeeds with those CLIs logged out.
+#
+# It happens ONCE, guarded by `force: false` on the copy rather than by a stamp:
+# these are OAuth refresh tokens the CLI rotates in place, and the credential
+# file's own existence is the only guard that refuses both to overwrite a token
+# the machine refreshed and to overwrite a login made on the machine directly.
+# So this seeds an empty machine and never repairs one — when the machine's
+# tokens expire, log in there, or delete the file there and create again.
+#
+# Two things worth knowing before adding a name here. Both machines then refresh
+# against one refresh token, so a rotation on either can log the other out. And
+# ~/.pi/agent/auth.json holds long-lived `deepseek` and `anthropic` API keys
+# alongside its OAuth triple, which is a heavier thing to copy than a session.
+seed-agent-credentials:
+  - claude
+  - codex
+  - pi
 
 # --- state backend ----------------------------------------------------------
 #
