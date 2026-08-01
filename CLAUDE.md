@@ -90,6 +90,32 @@ as a one-shot command does not.
 Anything else you want on the machine is `nix profile install` there, not a
 change to this repository.
 
+## The org checkouts
+
+`clone-orgs: [getcolors]` puts every source repository in the org under
+`~/code/getcolors/<repo>` on the machine — the same layout this workstation
+uses, so a path that works here works there.
+
+Only the org name is in `colors.yml`. The list is read from GitHub's API on the
+machine during `create`, unauthenticated, which is what the org being entirely
+public already allows. So a sixteenth repository appears on the next `create`
+with nothing here to edit — and equally, nothing here records which fifteen you
+got.
+
+The same three things that apply to the Emacs clone apply to these, for the same
+reasons:
+
+- **They ride the forwarded agent.** No key is written to the machine, and each
+  checkout can push back — only while your local agent holds the key.
+- **They happen once.** A later `create` leaves an existing checkout alone, so
+  work done on the machine survives. `git pull` there is how one moves.
+- **They are the longest part of a create.** Fifteen clones, after everything
+  else in the play except the atuin sync.
+
+Forks and archived repositories are skipped; neither is a working copy. If the
+org ever passes 100 source repositories the `create` fails rather than cloning a
+silent subset, because only one API page is read.
+
 ## The relationship with once-colors
 
 This project deliberately shares four things with `../once-colors`: the OCI

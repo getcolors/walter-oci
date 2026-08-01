@@ -237,6 +237,30 @@ dotfiles-dest: ~/code/amiorin/dotfiles-v3
 # only other one it ships, and this machine is Ubuntu.
 dotfiles-profile: ubuntu
 
+# --- organisation checkouts ---------------------------------------------------
+#
+# Every source repository in this org, cloned to ~/code/getcolors/<repo> — the
+# same layout this workstation uses, so a path that works here works there. That
+# is what makes the machine able to work on the stack rather than merely able to
+# compile it: fifteen checkouts, one of which is this file.
+#
+# Only the org is desired state. The list is read from GitHub's API on the
+# machine at create time, so a sixteenth repository arrives on the next create
+# with nothing to change here. Unauthenticated, which is exactly what the
+# workspace's "every repo in the org is public" design already assumes — no
+# token, and nothing private to miss.
+#
+# Runs after the dotfiles above, which write over $HOME, and before the atuin
+# sync that stays last. It is the longest step in a create: fifteen clones over
+# the forwarded agent.
+#
+# Rides that agent like the two clones above, so nothing writes a key to the
+# machine and every checkout can push back — while your local agent holds the
+# key. And clones once, for the same reason they do: a later create must not
+# discard work done on the machine. `git pull` there is how one moves.
+clone-orgs:
+  - getcolors
+
 # --- shell history -----------------------------------------------------------
 #
 # Adopts an existing atuin account, so a rebuilt machine can still see the
