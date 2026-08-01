@@ -147,6 +147,11 @@ nix-packages:
   # rather than at provisioning time. vterm additionally wants cmake and
   # libtool; add them here if that module is enabled.
   - gcc
+  # Per-project toolchains. `once`, `once-colors` and this project all describe
+  # theirs in a devenv.nix rather than expecting things on PATH, so without this
+  # the machine can check those repos out and not build them. Pairs with the
+  # `direnv` above — devenv is what `direnv allow` actually loads there.
+  - devenv
   # The three agent CLIs. `claude-code` is unfree in nixpkgs, where the other
   # two are not — the playbook's single `nix profile add` carries
   # NIXPKGS_ALLOW_UNFREE=1 and --impure for exactly this, which is what lets all
