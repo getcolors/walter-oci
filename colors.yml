@@ -42,7 +42,7 @@ power-wait-seconds: 300
 # passing the R2 keys in — walter hands them to every stage explicitly, but a
 # bare tofu falls through the AWS SDK's default chain to ~/.aws/credentials and
 # fails with "Credential access key has length 20, should be 32". See CLAUDE.md.
-oci-instance-id: ocid1.instance.oc1.eu-frankfurt-1.antheljrl3n4evichwvia7nio4ja7ur5kcq7si53qj4kv3et5tnue2bh4r2a
+oci-instance-id: ocid1.instance.oc1.eu-frankfurt-1.antheljrl3n4evickpnksybqk4udtsxbcrl6vy7xjlm5mfrkr3aail2j4tfa
 
 # --- oci --------------------------------------------------------------------
 #
