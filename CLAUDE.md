@@ -69,10 +69,19 @@ Three things about that clone, in the order they will bite:
 - **It happens once.** A later `create` leaves an existing checkout alone. That
   is on purpose: this is a working copy on a development machine, and an apply
   must not discard edits made there. `git pull` on the machine is how it moves.
-- **Packages are not pre-fetched.** The first `emacs` launch pulls ~80 packages
-  from ELPA/MELPA, native-compiles them and clones tree-sitter grammars. It
-  takes minutes and it is not a provisioning failure. `nerd-icons-install-fonts`
-  is still a manual step.
+- **Packages are fetched in the background by `create`, not on first launch.**
+  The final `walter-emacs-packages` stage starts `emacs --batch -l init.el` on
+  the machine and does not wait: the job is daemonized, so it keeps running after
+  `create` reports success. `create` finishing is therefore not the same as the
+  packages being there. Watch it, or don't:
+
+  ```sh
+  ssh walter-oci tail -f ~/.local/state/walter/emacs-packages.log
+  ```
+
+  It still cannot fail a `create` — nothing waits on it. Tree-sitter grammars are
+  **not** covered, since this configuration installs them lazily when a mode
+  first loads, and `nerd-icons-install-fonts` remains a manual step.
 
 `nix` and `emacs` arrive on `PATH` through `/etc/profile.d/nix.sh`, which is a
 **login** shell mechanism. `ssh walter-oci` sees them; `ssh walter-oci emacs …`
