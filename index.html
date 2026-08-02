@@ -1,0 +1,6 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Desired state for a remote development machine on Oracle Cloud."><title>walter-oci</title><style>:root{color-scheme:light dark;font:17px/1.6 system-ui,sans-serif}body{max-width:760px;margin:auto;padding:3rem 1.25rem}h1{font-size:clamp(2.5rem,8vw,5rem);margin:.2em 0}a{color:#36a269}code,pre{font-family:ui-monospace,monospace}pre{padding:1rem;overflow:auto;background:#8882;border-radius:.6rem}.tag{font-weight:700;color:#36a269}.warning{border-left:.3rem solid #d98b2b;padding-left:1rem}</style></head><body><main><p class="tag">LIVE DESIRED STATE</p><h1>walter-oci</h1><p>Configuration for one Oracle Cloud development machine managed by Walter, with remote OpenTofu state in R2 and a managed local SSH alias.</p><pre><code>./walter build
+./walter create --dry-run
+./walter stop
+./walter start
+ssh walter-oci</code></pre><p class="warning"><strong>Infrastructure warning:</strong> deletion removes the boot volume and any uncommitted work on it. The committed destroy guard must remain enabled.</p><p><a href="https://github.com/getcolors/walter">Walter Package Skill</a> · <a href="https://github.com/getcolors/walter-oci">Deployment source</a></p></main></body></html>
