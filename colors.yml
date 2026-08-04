@@ -127,6 +127,7 @@ nix-packages:
   - fish
   - fzf
   - gh
+  - caddy
   - awscli2
   - azure-cli
   - google-cloud-sdk
