@@ -125,6 +125,12 @@ nix-packages:
   - ripgrep
   - fd
   - fish
+  - fzf
+  - gh
+  - awscli2
+  - azure-cli
+  - google-cloud-sdk
+  - oci-cli
   # Required by dotfiles-repo below: the installer is a bb script, and walter
   # refuses to build without this beside it.
   - babashka
