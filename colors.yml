@@ -132,8 +132,8 @@ nix-packages:
   - azure-cli
   - google-cloud-sdk
   - oci-cli
-  # Required by dotfiles-repo below: the installer is a bb script, and walter
-  # refuses to build without this beside it.
+  # Required by dotfiles-checkout below: its Green launcher is a bb script, and
+  # walter refuses to build without this beside it.
   - babashka
   - clojure
   # The six the dotfiles' own config.fish invokes at interactive startup. Absent,
@@ -222,28 +222,15 @@ corepack-packages:
 
 # --- dotfiles ----------------------------------------------------------------
 #
-# Cloned to the machine and applied to $HOME by the remote playbook's last two
-# steps, after the shell and the editor the profile configures are already in
-# place.
+# clone-orgs below checks getcolors/dotfiles out at this path. After that clone,
+# Walter runs the checkout's existing `./green create`, using its own colors.yml:
+# that file selects the Ubuntu profile and targets $HOME. Walter supplies only
+# COLORS_PAR_DOTFILES_PREVENT_OVERWRITE=false for this authorized invocation;
+# it never exports COLORS_PAR_PROFILE.
 #
-# ssh:// rather than https://, for the same reason emacs-config-repo above is:
-# the clone rides the agent ~/.ssh/config forwards, so no private key lands on
-# the machine and edits made there can be pushed back. A dotfiles checkout you
-# cannot commit from is a checkout you stop editing.
-#
-# The cost is that create now needs your local agent to be holding the key —
-# an https:// clone of this public repository would not. That is already true of
-# the Emacs clone, so it adds no new failure mode.
-dotfiles-repo: git@github.com:amiorin/dotfiles-v3
-
-# Deliberately not the ~/code/personal/dotfiles-v3/main this configuration's
-# workstation uses. That path is a hand-made layout predating walter; this one is
-# walter's, and the two machines are not the same machine.
-dotfiles-dest: ~/code/amiorin/dotfiles-v3
-
-# Selects resources/stage-2/<profile>/ in the repository above. `macos` is the
-# only other one it ships, and this machine is Ubuntu.
-dotfiles-profile: ubuntu
+# The successful create is stamped under ~/.local/state/walter and never
+# repeated automatically, so later walter creates preserve edits made in $HOME.
+dotfiles-checkout: ~/code/getcolors/dotfiles
 
 # --- organisation checkouts ---------------------------------------------------
 #
@@ -258,9 +245,9 @@ dotfiles-profile: ubuntu
 # workspace's "every repo in the org is public" design already assumes — no
 # token, and nothing private to miss.
 #
-# Runs after the dotfiles above, which write over $HOME, and before the atuin
-# sync that stays last. It is the longest step in a create: fifteen clones over
-# the forwarded agent.
+# Runs before the dotfiles launcher above, because this is what creates that
+# checkout, and before the atuin sync that stays last. It is the longest step in
+# a create: the organisation's clones over the forwarded agent.
 #
 # Rides that agent like the two clones above, so nothing writes a key to the
 # machine and every checkout can push back — while your local agent holds the

@@ -53,6 +53,10 @@ ssh walter-oci
 emacs --init-directory ~/.config/neoemacs
 ```
 
+The `getcolors/dotfiles` checkout is applied once through its own Green launcher
+after the organisation repositories are cloned. Later creates preserve edits in
+`$HOME`.
+
 Everything else is `nix profile install` on the machine, not a change here.
 
 See `CLAUDE.md` for what this shares with `../once-colors` and why that is safe.

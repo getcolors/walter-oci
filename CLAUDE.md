@@ -116,6 +116,12 @@ Forks and archived repositories are skipped; neither is a working copy. If the
 org ever passes 100 source repositories the `create` fails rather than cloning a
 silent subset, because only one API page is read.
 
+After those clones, `dotfiles-checkout: ~/code/getcolors/dotfiles` runs that
+checkout's existing `./green create` with its own `colors.yml`, which selects the
+Ubuntu profile and targets `$HOME`. Walter lifts the dotfiles overwrite guard for
+that authorized invocation and stamps success, so later creates do not reapply
+files over edits made on the machine. Walter never exports `COLORS_PAR_PROFILE`.
+
 ## The relationship with once-colors
 
 This project deliberately shares four things with `../once-colors`: the OCI
