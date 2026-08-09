@@ -4,12 +4,12 @@ A remote development machine on Oracle Cloud, managed with
 [walter](https://github.com/getcolors/walter).
 
 ```sh
-./walter build              # render .colors/walter-oci/ — contacts nothing
-./walter create --dry-run   # print the graph — touches nothing
-./walter create             # provision it
+./green build              # render .colors/walter-oci/ — contacts nothing
+./green create --dry-run   # print the graph — touches nothing
+./green create             # provision it
 ssh walter-oci              # get on it
-./walter stop               # power off when you are done
-./walter start              # power on tomorrow
+./green stop               # power off when you are done
+./green start              # power on tomorrow
 ```
 
 `colors.yml` is the only file you normally edit. Credentials never go in it —

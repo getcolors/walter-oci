@@ -11,7 +11,7 @@ dev-environment files.
 
 ```text
 colors.yml                        the desired state — the only file you normally edit
-walter                            the installed launcher (a COPY of the payload)
+green                             the installed launcher (a COPY of the payload)
 .agents/skills/package-walter-green   the installed skill package
 .claude/skills/package-walter-green   a symlink into .agents/skills, so Claude Code finds it
 .envrc                            secret-free; sources the gitignored .envrc.private
@@ -25,12 +25,12 @@ assuming from the working tree.
 ## Commands
 
 ```sh
-./walter build              # render .colors/walter-oci/ — contacts nothing
-./walter create --dry-run   # print the graph — touches nothing
-./walter create             # provision, and write the ssh alias
-./walter stop               # power off
-./walter start              # power on, and refresh the alias
-./walter delete             # destroy (guarded — see below)
+./green build              # render .colors/walter-oci/ — contacts nothing
+./green create --dry-run   # print the graph — touches nothing
+./green create             # provision, and write the ssh alias
+./green stop               # power off
+./green start              # power on, and refresh the alias
+./green delete             # destroy (guarded — see below)
 ```
 
 After a successful `create`, `ssh walter-oci` reaches the machine: the local
@@ -174,13 +174,13 @@ accepting the refresh friction in exchange.
 
 ## Gotchas
 
-**The root `walter` is a copy, not a symlink.** `npx skills update -p` rewrites
+**The root `green` is a copy, not a symlink.** `npx skills update -p` rewrites
 `.agents/skills/` and leaves the root file untouched, so a project that skips the
 re-copy keeps running the old pin while the lockfile claims the new one:
 
 ```sh
 npx skills update -p
-cp .agents/skills/package-walter-green/walter walter
+cp .agents/skills/package-walter-green/green green
 ```
 
 **`stop` does not restart with `create`.** With no power state in the
@@ -189,13 +189,13 @@ configuration there is no diff, so an apply leaves a stopped machine stopped.
 
 **The Emacs keys are inert until the pin moves.** `emacs-config-repo` and
 `emacs-config-dest` are read by walter's remote playbook, which lives in the
-library the root `./walter` resolves by SHA — so `./walter build` renders the
+library the root `./green` resolves by SHA — so `./green build` renders the
 pinned playbook, not the one in `../walter`. Setting a key here changes nothing
 until that library is pushed and the launcher restamped. To see the working
 tree's version meanwhile:
 
 ```sh
-WALTER_LIB_ROOT=../walter ./walter build
+WALTER_LIB_ROOT=../walter ./green build
 ```
 
 That is a deliberate act, not the default, and it renders something the pinned
@@ -253,7 +253,7 @@ is on it is uncommitted work. The guard is on by default and lifted with
 
 ## Provenance
 
-The launcher here is pinned and self-resolving: `./walter` fetches
+The launcher here is pinned and self-resolving: `./green` fetches
 `io.github.getcolors/walter` at the stamped commit on first run, into
 `~/.gitlibs`, and needs no checkout, no `WALTER_LIB_ROOT` and no install step.
 
@@ -265,7 +265,7 @@ did not earn. Run the real install when you want it:
 
 ```sh
 npx skills add getcolors/walter
-cp .agents/skills/package-walter-green/walter walter    # the copy, again
+cp .agents/skills/package-walter-green/green green    # the copy, again
 ```
 
 The lockfile appears with it, and from then on `npx skills update -p` is the
