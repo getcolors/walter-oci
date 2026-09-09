@@ -42,7 +42,6 @@ power-wait-seconds: 300
 # passing the R2 keys in — walter hands them to every stage explicitly, but a
 # bare tofu falls through the AWS SDK's default chain to ~/.aws/credentials and
 # fails with "Credential access key has length 20, should be 32". See CLAUDE.md.
-oci-instance-id: ocid1.instance.oc1.eu-frankfurt-1.antheljrl3n4evicvgbdqr7qzf5sf2a4nlofrlrpz5weqknxunz6svfkqecq
 
 # --- oci --------------------------------------------------------------------
 #
@@ -97,7 +96,7 @@ oci-ssh-authorized-keys: ~/.ssh/id_ed25519.pub
 # The clone happens once. A later create leaves an existing checkout alone, so
 # uncommitted work on the machine survives; `git pull` there is the way to
 # refresh it.
-emacs-config-repo: git@github.com:amiorin/.emacs.d.git
+emacs-config-repo: https://github.com/amiorin/.emacs.d.git
 
 # Not the default `~/.config/emacs`, so Emacs does not find it on its own —
 # launch with `emacs --init-directory ~/.config/neoemacs`. This mirrors the path
@@ -325,3 +324,10 @@ seed-agent-credentials:
 # walter-oci/walter-compute.tfstate, never once-colors/tofu-compute.tfstate.
 r2-bucket: tofu-state-319271fed8bc6d2d9059362be1165f37-eu
 r2-endpoint: https://319271fed8bc6d2d9059362be1165f37.eu.r2.cloudflarestorage.com
+
+# Existing operator identity used by the other Walter deployments.
+github-account: amiorin
+git-email: 32617+amiorin@users.noreply.github.com
+
+# Existing deployment ownership must be migrated before create.
+compute-require-existing-state: true
