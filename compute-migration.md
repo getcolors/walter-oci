@@ -42,6 +42,7 @@ Configuration changes:
 - Kept the same Emacs repository using HTTPS and the authorized existing workspace GitHub identity. A real create uses its device-flow approval; no token was acquired.
 - Enabled the existing-state guard so an empty destination cannot create a duplicate of this existing deployment.
 
-External identity prerequisite: verify the private identity matching the existing
-~/.ssh/id_ed25519.pub and set ssh-private-key-path before real application access.
-No private path was guessed, opened or changed by this refresh.
+External access prerequisite: verify SSH access using the identity matching the
+existing ~/.ssh/id_ed25519.pub, through the SSH agent or normal SSH identity
+selection. Set ssh-private-key-path only when an explicit Ansible identity is
+needed. No private path was guessed, opened or changed by this refresh.
