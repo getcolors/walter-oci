@@ -1,0 +1,296 @@
+# CLAUDE.md
+
+## Current package contract
+
+The installed launcher now uses colors-compute. Read [compute-migration.md](compute-migration.md)
+before any live operation. That runbook supersedes the older runtime descriptions
+below concerning monolithic state, instance-ID escape hatches, forwarded GitHub
+agents, key adoption, and keys surviving deletion. Those descriptions record the
+previous package pin and do not prove the current live machine was migrated.
+No live state or application change was performed during this payload refresh.
+
+
+This file provides guidance to Claude Code when working with this repository.
+
+## What this repository is
+
+Desired state for `walter-oci`: one Oracle Cloud development machine, OpenTofu
+state in Cloudflare R2. Nothing here is source code. What is tracked is
+`colors.yml`, the installed launcher, the skill package behind it, and the
+dev-environment files.
+
+```text
+colors.yml                        the desired state — the only file you normally edit
+green                             the installed launcher (a COPY of the payload)
+.agents/skills/package-walter-green   the installed skill package
+.claude/skills/package-walter-green   a symlink into .agents/skills, so Claude Code finds it
+.envrc                            secret-free; sources the gitignored .envrc.private
+devenv.nix                        the toolchain
+```
+
+Everything else is generated (`.colors/`) or secret (`.envrc.private`).
+`.gitignore` is `.*` with narrow negations, so check `git ls-files` rather than
+assuming from the working tree.
+
+## Commands
+
+```sh
+./green build              # render .colors/walter-oci/ — contacts nothing
+./green create --dry-run   # print the graph — touches nothing
+./green create             # provision, and write the ssh alias
+./green stop               # power off
+./green start              # power on, and refresh the alias
+./green delete             # destroy (guarded — see below)
+```
+
+After a successful `create`, `ssh walter-oci` reaches the machine: the local
+Ansible stage writes a managed block into `~/.ssh/config` with agent forwarding
+on, so you can push to git from the machine without copying a private key onto
+it.
+
+## What the machine gets
+
+The remote stage installs **nix** and a **Ghostty terminfo entry** on any walter
+machine, and then — because `emacs-config-repo` is set in `colors.yml` — Emacs
+from a pinned nixpkgs plus this workstation's configuration, cloned to
+`~/.config/neoemacs`:
+
+```sh
+ssh walter-oci
+emacs --init-directory ~/.config/neoemacs
+```
+
+The `--init-directory` is mandatory. `~/.config/neoemacs` is not a path Emacs
+looks in on its own; the XDG default it *does* read is `~/.config/emacs`, and
+this configuration deliberately does not live there.
+
+`TERM` travels over SSH and the terminfo database does not, which is why the
+terminfo entry is there. Without it Ubuntu 24.04 has never heard of Ghostty and
+answers every full-screen program — `vim`, `top`, `less`, Emacs — with
+`Terminal type xterm-ghostty is not defined`. It is symlinked into
+`~/.terminfo`, which the system ncurses reads without any environment variable,
+so it works in a non-login shell too.
+
+Three things about that clone, in the order they will bite:
+
+- **It rides the forwarded agent.** The URL is `git@github.com:` and no private
+  key is ever written to the machine, so the checkout can push back — but only
+  while your local agent holds the key.
+- **It happens once.** A later `create` leaves an existing checkout alone. That
+  is on purpose: this is a working copy on a development machine, and an apply
+  must not discard edits made there. `git pull` on the machine is how it moves.
+- **Packages are fetched in the background by `create`, not on first launch.**
+  The final `walter-emacs-packages` stage starts `emacs --batch -l init.el` on
+  the machine and does not wait: the job is daemonized, so it keeps running after
+  `create` reports success. `create` finishing is therefore not the same as the
+  packages being there. Watch it, or don't:
+
+  ```sh
+  ssh walter-oci tail -f ~/.local/state/walter/emacs-packages.log
+  ```
+
+  It still cannot fail a `create` — nothing waits on it. Tree-sitter grammars are
+  **not** covered, since this configuration installs them lazily when a mode
+  first loads, and `nerd-icons-install-fonts` remains a manual step.
+
+`nix` and `emacs` arrive on `PATH` through `/etc/profile.d/nix.sh`, which is a
+**login** shell mechanism. `ssh walter-oci` sees them; `ssh walter-oci emacs …`
+as a one-shot command does not.
+
+Anything else you want on the machine is `nix profile install` there, not a
+change to this repository.
+
+## The org checkouts
+
+`clone-orgs: [getcolors]` puts every source repository in the org under
+`~/code/getcolors/<repo>` on the machine — the same layout this workstation
+uses, so a path that works here works there.
+
+Only the org name is in `colors.yml`. The list is read from GitHub's API on the
+machine during `create`, unauthenticated, which is what the org being entirely
+public already allows. So a sixteenth repository appears on the next `create`
+with nothing here to edit — and equally, nothing here records which fifteen you
+got.
+
+The same three things that apply to the Emacs clone apply to these, for the same
+reasons:
+
+- **They ride the forwarded agent.** No key is written to the machine, and each
+  checkout can push back — only while your local agent holds the key.
+- **They happen once.** A later `create` leaves an existing checkout alone, so
+  work done on the machine survives. `git pull` there is how one moves.
+- **They are the longest part of a create.** Fifteen clones, after everything
+  else in the play except the atuin sync.
+
+Forks and archived repositories are skipped; neither is a working copy. If the
+org ever passes 100 source repositories the `create` fails rather than cloning a
+silent subset, because only one API page is read.
+
+After those clones, `dotfiles-checkout: ~/code/getcolors/dotfiles` runs that
+checkout's existing `./green create` with its own `colors.yml`, which selects the
+Ubuntu profile and targets `$HOME`. Walter lifts the dotfiles overwrite guard for
+that authorized invocation and stamps success, so later creates do not reapply
+files over edits made on the machine. Walter never exports `COLORS_PAR_PROFILE`.
+
+## The relationship with once-colors
+
+This project deliberately shares four things with `../once-colors`: the OCI
+tenancy, the compartment, the **subnet** and availability domain, the `DEFAULT`
+session profile, and the R2 bucket.
+
+Two consequences, stated rather than discovered:
+
+- The machine sits in the production website's subnet and inherits its security
+  list. It can also reach the website server over private IPs, which is useful
+  for debugging against the real stack.
+- One `oci session refresh` serves both projects.
+
+What keeps them apart is **`profile`**, and only that. Remote state is keyed
+`<profile>/<stage>.tfstate`, so this writes `walter-oci/walter-compute.tfstate`
+while once-colors writes `once-colors/tofu-compute.tfstate`. Both halves differ —
+walter names its stage `walter-compute` rather than `tofu-compute` for exactly
+this reason — so sharing one bucket is safe.
+
+**Never export `COLORS_PAR_PROFILE`.** `profile` is a flat key and `COLORS_PAR_*`
+overlays any flat key, so one variable in the wrong shell would point walter at
+once-colors' state — same bucket, same compartment, same subnet. Walter refuses
+to start when it is set. Do not suggest a workaround; that is the guard working.
+
+## OCI credentials
+
+The `DEFAULT` profile is session-token based, so `.envrc` exports
+`OCI_CLI_AUTH=security_token` — the `oci` CLI rejects that profile otherwise.
+OpenTofu's `oracle/oci` provider detects `security_token_file` by itself and does
+not need the variable.
+
+That asymmetry matters here more than it does in once-colors, because **walter's
+everyday verbs drive the CLI**. `stop` and `start` never reach OpenTofu — power
+state is not desired state — so they depend on a live session where `create` does
+not. Sessions last 60 minutes.
+
+When walter reports an expired session it names the fix:
+
+```sh
+bb ~/.claude/skills/refresh-oci-token/refresh-oci-token.clj
+```
+
+That skill is installed globally on this machine, so it works from any
+directory. Within a session's window it extends the token in place with no
+browser; only a fully expired session needs the login flow, which needs an SSH
+port forward on 8181.
+
+This is a deliberate choice of temporary credentials over a long-lived API key,
+accepting the refresh friction in exchange.
+
+## Gotchas
+
+**The root `green` is a copy, not a symlink.** `npx skills update -p` rewrites
+`.agents/skills/` and leaves the root file untouched, so a project that skips the
+re-copy keeps running the old pin while the lockfile claims the new one:
+
+```sh
+npx skills update -p
+cp .agents/skills/package-walter-green/green green
+```
+
+**`stop` does not restart with `create`.** With no power state in the
+configuration there is no diff, so an apply leaves a stopped machine stopped.
+`start` is the only way up.
+
+**The Emacs keys are inert until the pin moves.** `emacs-config-repo` and
+`emacs-config-dest` are read by walter's remote playbook, which lives in the
+library the root `./green` resolves by SHA — so `./green build` renders the
+pinned playbook, not the one in `../walter`. Setting a key here changes nothing
+until that library is pushed and the launcher restamped. To see the working
+tree's version meanwhile:
+
+```sh
+WALTER_LIB_ROOT=../walter ./green build
+```
+
+That is a deliberate act, not the default, and it renders something the pinned
+launcher would not run.
+
+**Pin `oci-image-id` after the first create.** Left unset the newest compatible
+Canonical image is used, and the image id forces replacement — so a later apply
+proposes destroying the machine because Canonical published something new. With
+`compute-prevent-destroy: true` that apply fails instead, which is safe and
+confusing. Read the id back with `tofu state show oci_core_instance.ampere_vm`.
+
+**Fill in `oci-instance-id` once it exists**, and again after every recreate —
+it names one instance, so a rebuilt machine leaves it pointing at a `TERMINATED`
+one. It is what makes `stop` and `start` work when the R2 backend is
+unreachable, rather than leaving you with a running machine you cannot power
+off.
+
+**Running `tofu` by hand needs the R2 keys passed in.** Both commands above are
+run inside `.colors/walter-oci/walter-compute/`, and on their own they fail with
+
+```text
+Failed to load state: … InvalidArgument: Credential access key has length 20, should be 32
+```
+
+Nothing is wrong with the bucket. `AWS_ACCESS_KEY_ID` is unset in the shell, so
+the AWS SDK falls through its default chain to `~/.aws/credentials` and offers
+OpenTofu an unrelated Amazon key. Walter never hits this because it passes the
+R2 credentials to every stage explicitly; only the by-hand path is exposed:
+
+```sh
+cd .colors/walter-oci/walter-compute
+AWS_ACCESS_KEY_ID="$COLORS_PAR_R2_ACCESS_KEY_ID" \
+AWS_SECRET_ACCESS_KEY="$COLORS_PAR_R2_SECRET_ACCESS_KEY" \
+  tofu output -raw instance_id
+```
+
+**A recreate brings a new host key, and a new address.** The managed
+`~/.ssh/config` block is rewritten with the new IP, but nothing touches
+`~/.ssh/known_hosts` — so the first `ssh walter-oci` afterwards asks you to
+accept an unknown host. Answering the prompt is all it needs. It only looks
+broken from a script: with no terminal to prompt on, or under `BatchMode=yes`,
+the same situation is reported as `Host key verification failed`, which reads
+like a stale entry rather than a missing one. To record it without a prompt:
+
+```sh
+ssh -o StrictHostKeyChecking=accept-new walter-oci true
+```
+
+The remote Ansible stage never hits this — `ansible.cfg` sets
+`StrictHostKeyChecking=no` and points `UserKnownHostsFile` at `/dev/null`.
+
+**`delete` takes the boot volume with it.** This is a development machine; what
+is on it is uncommitted work. The guard is on by default and lifted with
+`COLORS_PAR_COMPUTE_PREVENT_DESTROY=false` for one intentional run.
+
+## Provenance
+
+The launcher here is pinned and self-resolving: `./green` fetches
+`io.github.getcolors/walter` at the stamped commit on first run, into
+`~/.gitlibs`, and needs no checkout, no `WALTER_LIB_ROOT` and no install step.
+
+It was **copied by hand** from `../walter/skills/package-walter-green/`, not
+installed with `npx skills add getcolors/walter`, so there is deliberately no
+`skills-lock.json` — a lockfile records the source and content hash that an
+actual install computed, and writing one by hand would be a claim this project
+did not earn. Run the real install when you want it:
+
+```sh
+npx skills add getcolors/walter
+cp .agents/skills/package-walter-green/green green    # the copy, again
+```
+
+The lockfile appears with it, and from then on `npx skills update -p` is the
+way this project moves forward.
+
+## Documentation
+
+`index.html` is this repository's landing page and carries two analytics tags:
+GA4 measurement ID `G-4VKP1WY4QJ`, whose explicit `page_title` must exactly
+equal the decoded HTML `<title>` and stay distinct and stable so one Analytics
+property can separate repositories, and the self-hosted Rybbit snippet
+`<script src="https://rybbit.getcolors.ai/api/script.js" data-site-id="9fb9c41a6d49" defer></script>`,
+which shares one site ID across every page because `getcolors.github.io/<repo>/`
+paths already encode the repository. Never add one tag without the other.
+
+## Git
+
+Do not commit or push unless explicitly asked.
